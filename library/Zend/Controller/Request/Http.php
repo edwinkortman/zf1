@@ -275,10 +275,23 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
     public function getQuery($key = null, $default = null)
     {
         if (null === $key) {
-            return $_GET;
+            return htmlspecialchars($_GET, ENT_QUOTES, 'utf-8', false);
         }
 
-        return (isset($_GET[$key])) ? $_GET[$key] : $default;
+        if (!isset($_GET[$key])) {
+            return $default;
+        }
+
+        if (!is_array($_GET[$key])) {
+            return htmlspecialchars($_GET[$key], ENT_QUOTES, 'utf-8', false);
+        }
+
+
+        array_walk_recursive($_GET[$key], function(&$value) {
+            $value = htmlspecialchars($value, ENT_QUOTES, 'utf-8', false);
+        });
+
+        return $_GET[$key];
     }
 
     /**
@@ -317,10 +330,22 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
     public function getPost($key = null, $default = null)
     {
         if (null === $key) {
-            return $_POST;
+            return htmlspecialchars($_POST, ENT_QUOTES, 'utf-8', false);
         }
 
-        return (isset($_POST[$key])) ? $_POST[$key] : $default;
+        if (!isset($_POST[$key])) {
+            return $default;
+        }
+
+        if (!is_array($_POST[$key])) {
+            return htmlspecialchars($_POST[$key], ENT_QUOTES, 'utf-8', false);
+        }
+
+        array_walk_recursive($_POST[$key], function(&$value) {
+            $value = htmlspecialchars($value, ENT_QUOTES, 'utf-8', false);
+        });
+
+        return $_POST[$key];
     }
 
     /**
@@ -390,10 +415,10 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
     public function setRequestUri($requestUri = null)
     {
         if ($requestUri === null) {
-            if (isset($_SERVER['HTTP_X_ORIGINAL_URL'])) { 
+            if (isset($_SERVER['HTTP_X_ORIGINAL_URL'])) {
                 // IIS with Microsoft Rewrite Module
                 $requestUri = $_SERVER['HTTP_X_ORIGINAL_URL'];
-            } elseif (isset($_SERVER['HTTP_X_REWRITE_URL'])) { 
+            } elseif (isset($_SERVER['HTTP_X_REWRITE_URL'])) {
                 // IIS with ISAPI_Rewrite
                 $requestUri = $_SERVER['HTTP_X_REWRITE_URL'];
             } elseif (
@@ -402,7 +427,7 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
                 && $_SERVER['IIS_WasUrlRewritten'] == '1'
                 && isset($_SERVER['UNENCODED_URL'])
                 && $_SERVER['UNENCODED_URL'] != ''
-                ) {
+            ) {
                 $requestUri = $_SERVER['UNENCODED_URL'];
             } elseif (isset($_SERVER['REQUEST_URI'])) {
                 $requestUri = $_SERVER['REQUEST_URI'];
@@ -568,8 +593,8 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
     {
         if ($basePath === null) {
             $filename = (isset($_SERVER['SCRIPT_FILENAME']))
-                      ? basename($_SERVER['SCRIPT_FILENAME'])
-                      : '';
+                ? basename($_SERVER['SCRIPT_FILENAME'])
+                : '';
 
             $baseUrl = $this->getBaseUrl();
             if (empty($baseUrl)) {
@@ -619,16 +644,16 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
             $baseUrl = $this->getBaseUrl(); // this actually calls setBaseUrl() & setRequestUri()
             $baseUrlRaw = $this->getBaseUrl(false);
             $baseUrlEncoded = urlencode($baseUrlRaw);
-        
+
             if (null === ($requestUri = $this->getRequestUri())) {
                 return $this;
             }
-        
+
             // Remove the query string from REQUEST_URI
             if ($pos = strpos($requestUri, '?')) {
                 $requestUri = substr($requestUri, 0, $pos);
             }
-            
+
             if (!empty($baseUrl) || !empty($baseUrlRaw)) {
                 if (strpos($requestUri, $baseUrl) === 0) {
                     $pathInfo = substr($requestUri, strlen($baseUrl));
@@ -642,7 +667,7 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
             } else {
                 $pathInfo = $requestUri;
             }
-        
+
         }
 
         $this->_pathInfo = (string) $pathInfo;
@@ -1092,3 +1117,4 @@ class Zend_Controller_Request_Http extends Zend_Controller_Request_Abstract
         return $ip;
     }
 }
+
